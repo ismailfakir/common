@@ -16,6 +16,7 @@ public class AppLogger {
     private AppLogger(String className) {
         rootLogger = (Logger) LoggerFactory.getLogger(className);
         LoggerContext loggerContext = rootLogger.getLoggerContext();
+
         // we are not interested in auto-configuration
         loggerContext.reset();
 
