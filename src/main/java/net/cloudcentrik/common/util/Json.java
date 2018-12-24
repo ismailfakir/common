@@ -4,11 +4,11 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import com.eclipsesource.json.WriterConfig;
+import sun.swing.BakedArrayList;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static net.cloudcentrik.common.util.Json.JsonBuilder.JsonBuilder;
@@ -50,6 +50,26 @@ public class Json {
         }
     }
 
+    private Json getJson(final String ...keys) {
+        Json tempJson=new Json(jsonValue);
+        for (String key:keys){
+            tempJson=tempJson.getJson(key);
+        }
+        return tempJson;
+    }
+
+    public Json getJsonFromPath(final String path) {
+        return getJson(path.split("/"));
+    }
+
+    /*public List<Json> getAsList(){
+        List<Json> list=new ArrayList<>();
+        asJsonArray().forEach(element->{
+            list.add(Json(element.toString()));
+        });
+        return list;
+    }*/
+
     public List<String> getkeys() {
         return getkeys(jsonValue);
     }
@@ -76,19 +96,9 @@ public class Json {
         return map;
     }
 
-    /*
-    *TODO
-     */
     public Map<String,JsonValue> getAsJsonValueMap() {
         Map<String, JsonValue> map = new HashMap<>();
         asJsonObject(jsonValue).names().forEach(key -> {
-            /*if (getJson(key).jsonValue.isString()) {
-                map.put(key,asJson(jsonValue).getJson(key).toString());
-            } else if (getJson(key).jsonValue.isObject()) {
-                map.put(key,asJson(jsonValue).getJson(key).asJsonObject());
-            } else if (getJson(key).jsonValue.isArray()) {
-                map.put(key,asJson(jsonValue).getJson(key).asJsonArray());
-            }*/
             map.put(key,getJson(key).jsonValue);
         });
         return map;
@@ -100,6 +110,12 @@ public class Json {
             map.put(key, asJson(jsonValue).getJson(key).asString());
         });
         return map;
+    }
+
+    public List<String> getAsList() {
+        return getValues().stream()
+                .filter(e->e.jsonValue.isString())
+                .map(e->e.toString()).collect(Collectors.toList());
     }
 
     protected Json asJson(JsonValue jsonValue) {
@@ -151,6 +167,28 @@ public class Json {
     public String asString() {
         return jsonValue.toString(WriterConfig.PRETTY_PRINT);
     }
+
+    public Integer asInt(){
+        if(jsonValue.isNumber()){
+            return jsonValue.asInt();
+        }
+        return null;
+    }
+
+    public Boolean asBool(){
+        if(jsonValue.isBoolean()){
+            return jsonValue.asBoolean();
+        }
+        return null;
+    }
+
+    public Double asDouble(){
+        if(jsonValue.isNumber()){
+            return jsonValue.asDouble();
+        }
+        return null;
+    }
+
 
     private static JsonValue parse(final String string) {
         return com.eclipsesource.json.Json.parse(string);
@@ -232,7 +270,8 @@ public class Json {
 
             return this;
         }
-/*
+
+        /*
         public JsonBuilder plus(final Map<String, String> keyValues) {
             keyValues.forEach((key, value) -> {
                 jsonValue.asObject().set(key, value);
@@ -288,7 +327,7 @@ public class Json {
             return this;
         }
 
-        public JsonBuilder set(final String key, final Consumer<JsonBuilder> builderConsumer) {
+        public JsonBuilder plus(final String key, final Consumer<JsonBuilder> builderConsumer) {
             final JsonBuilder builder = JsonBuilder();
             builderConsumer.accept(builder);
             jsonValue.asObject().set(key, builder.jsonValue);

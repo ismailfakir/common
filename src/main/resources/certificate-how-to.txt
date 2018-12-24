@@ -1,0 +1,90 @@
+
+Overview of Self-Signed and Certificate Authority Certificates
+
+An SSL certificate is necessary for transmission of encrypted data between a client and a server. A self-signed certificate is one that you create for your server, in the server's KeyStore. You then export and import the exported certificate into the client's TrustStore. A certificate authority (CA) certificate (or CA-signed certificate) is a certificate that has been issued by a trusted third party. To obtain a CA-signed certificate, you create a request file from your self-signed certificate and send it to a certificate authority for approval. You then import this CA-signed certificate into the server's KeyStore, replacing the self-signed certificate.
+
+One advantage to using a CA-signed certificate instead of a self-signed certificate is that you do not need to import the CA-signed certificate into the client's TrustStore. The client already has a trusted root certificate for that CA either in the Glassfish Server instance or in the browser itself.
+Creating a Self-Signed Certificate
+
+In general, you use the Java keytool command to create a self-signed certificate on the same server where the KeyStore is located. If you create the self-signed certificate on another server, you need to transfer it from that server to the server where it will be used to create the KeyStore.
+
+    Decide on a certificate name.
+
+    At a minimum, the certificate file should have .jks as its extension.
+
+    Determine if the KeyStore file already exists on the server.
+
+    keytool -list -v -keystore path_to_keystore_file
+
+    Generate the self-signed certificate and place it in the KeyStore.
+
+    keytool -genkeypair -alias alias_name -keyalg RSA -validity #_of_days -keysize 2048 -keystore path_to_keystore_file
+
+    where:
+
+        alias_name: Specifies a word of your choice, for example, the fully qualified domain name of the server host.
+
+        #_of_days: Specifies the number of days that the certificate is to be valid.
+
+        2048 is the recommended key size.
+
+        path_to_keystore_file: Specifies the path to the KeyStore. This file or its parent directory must exist.
+
+    If you are going to have the certificate signed by a CA, you can skip to "Creating a CA-Signed Certificate Request". However, while you are waiting for the CA to return your certificate, you can use your self-signed certificate by continuing with the next steps.
+
+    Export the certificate needs to a certificate file.
+
+    keytool -export -alias alias_name -keystore path_to_keystore_file -rfc -file path_to_certificate_file
+
+    where:
+
+        alias_name: Specifies the same alias that was used to generate the certificate.
+
+        path_to_keystore_file: Specifies the same KeyStore path that was used to generate the certificate.
+
+        path_to_certificate_file: Specifies the exported certificate file, often given an extension of .cert.
+
+Installing the Self-Signed Certificate on the Client
+
+The certificate file generated in the previous step must be transferred to the client host and imported into the truststore of the client.
+
+To import the certificate into the truststore of your client:
+
+keytool -importcert -alias alias_name -file path_to_certificate_file -keystore truststore_file
+
+where:
+
+    alias_name: Specifies a word of your choice, usually the same word you used when generating the certificate.
+
+    path_to_certificate_file: Specifies path to where you stored the certificate file.
+
+    glassfish_truststore_file: Specifies the TrustStore file used by your client.
+
+Creating a CA-Signed Certificate Request
+
+To generate a CA certificate request using keytool:
+
+./keytool -certreq -alias alias_name -keystore path_to_keystore_file -file request_file
+
+where:
+
+    alias_name: Specifies the alias that you gave to the self-signed certificate when you created it.
+
+    path_to_keystore_file: Specifies path to the KeyStore file that holds your self-signed certificate.
+
+    request_file: Specifies path to the request file output. This file is sent to the CA.
+
+Submit the certificate request and get the certificate approved by the CA. As there are many ways to have your certificate request approved, this step is left up to you.
+Importing a CA-Signed Certificate
+
+When you receive the certificate from the CA it can be imported into your KeyStore on the server.
+
+./keytool -import -trustcacerts -alias alias_name -file certificate_file -keystore keystore_file
+
+where:
+
+    alias_name: Specifies the alias that you gave to the self-signed certificate when you created it.
+
+    certificate_file: Specifies the path to the CA-signed certificate file.
+
+    keystore_file: Specifies the path to the server KeyStore.
